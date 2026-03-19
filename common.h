@@ -16,6 +16,10 @@ typedef struct {
     char nom_Fichier[MAX_FILENAME];
 } request_t;
 
+typedef struct {
+    int code;  // 0 = succes, -1 = erreur
+    long filesize;
+} response_t;
 
 
 #endif

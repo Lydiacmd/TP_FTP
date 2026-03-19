@@ -9,14 +9,59 @@
 #define NB_PROC 10
 #define PORT 2121
 
-void transfert(int connfd);
+void transfert(int connfd){
+    request_t req;
+    response_t rep;
+
+    // Recevoir la requete 
+    Rio_readn(connfd, &req, sizeof(request_t));
+
+    if (req.type == GET){
+        // le chemin
+        char chemin[MAX_NAME_LEN];
+        // construit une chaine de caracteres dans le chemin
+        snprintf(chemin, MAX_NAME_LEN, "%s%s", SERVER_DIR, req.nom_Fichier);
+
+        // Ouvrire le fichier 
+        int fd = open(chemin, O_RDONLY);
+
+        if (fd < 0){
+            // fichier introuvable 
+            rep.code = -1;
+            Rio_writen(connfd, &rep, sizeof(response_t));
+            return;
+        }
+
+        // Obtenir la taille du fichier 
+        struct stat st;
+        stat(chemin,&st);
+        long filesize = st.st_size;
+
+        // fichier trouve -> envoyer 
+        rep.code =0;
+        rep.filesize = filesize;
+        // envois exactement N bytes sur la socket (garentit tout les byte bien envoyer )
+        Rio_writen(connfd, &rep, sizeof(response_t));
+
+        // charger tout le fichier en mémoire et envoyer
+        char *buf = malloc(filesize);
+        read(fd, buf, filesize);
+        Rio_writen(connfd, buf, filesize);
+
+        free(buf);
+        close(fd);
+    }else {
+        // type invalide
+        rep.code = -1;
+        Rio_writen(connfd, &rep, sizeof(response_t));
+    }
+}
 /* 
  * Note that this code only works with IPv4 addresses
  * (IPv6 is not supported)
  */
 
 int pids[NB_PROC];
-
 
 
 void handler_sigint(int sig){

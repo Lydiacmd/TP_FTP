@@ -13,3 +13,15 @@ Q4 /
  - handler_sigint : envoie SIGINT à tous les fils + waitpid
  - Signal(SIGINT, handler_sigint) installé avant le fork
  - Dans le fils : Signal(SIGINT, SIG_DFL) pour terminer proprement -> eviter les boucle
+
+Q5 / 
+ - Serveur cherchee ces fichiers dans ./serveur_files
+ - Le clients sauvgarde les fihcier recus dans .:client_files
+
+Q6 /
+- SERVEUR :  fonction transfert  
+        - Recevoir la request_t du client
+        - Vérifier le type de requête
+            Si GET : ouvrir le fichier, l'envoyer
+            Sinon erreur 
+        
