@@ -15,6 +15,20 @@ void transfert(int connfd);
  * (IPv6 is not supported)
  */
 
+int pids[NB_PROC];
+
+
+
+void handler_sigint(int sig){
+
+    for (int i=0; i<NB_PROC;i++){
+        Kill(pids[i],SIGINT);
+    }
+    while(waitpid(-1,NULL,0)>0);
+    exit(0);
+
+
+}
 
 int main(int argc, char **argv)
 {
@@ -24,7 +38,8 @@ int main(int argc, char **argv)
     char client_ip_string[INET_ADDRSTRLEN];
     char client_hostname[MAX_NAME_LEN];
     pid_t pid;
-    int pids[NB_PROC];
+
+    Signal(SIGINT, handler_sigint);
     
     
     clientlen = (socklen_t)sizeof(clientaddr);
@@ -42,9 +57,14 @@ int main(int argc, char **argv)
     } 
         
     if (pid == 0){  // le fils 
+
+        // quand il recois un SIGINT il termine simplement evite les boucle infinie 
+        Signal(SIGINT, SIG_DFL);
+        
         // La boule êrmet de servir les clients un par un, indefinimen
         // ici pas de close(listenfd) il doit etre enlevé dans le fils car des le pool les fils ont besoin de 
         //listenfd pour fait accept a chaque tour
+        
         while(1){
 
         // Accepte une connexion
