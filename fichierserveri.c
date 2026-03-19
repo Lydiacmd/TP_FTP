@@ -61,15 +61,16 @@ void transfert(int connfd){
  * (IPv6 is not supported)
  */
 
-int pids[NB_PROC];
+int pids[NB_PROC] = {0};
 
 
 void handler_sigint(int sig){
 
-    for (int i=0; i<NB_PROC;i++){
-        Kill(pids[i],SIGINT);
+    for (int i = 0; i < NB_PROC; i++) {
+        if (pids[i] > 0)
+            Kill(pids[i], SIGINT);
     }
-    while(waitpid(-1,NULL,0)>0);
+    while(waitpid(-1, NULL, 0) > 0);
     exit(0);
 
 

@@ -25,3 +25,10 @@ Q6 /
             Si GET : ouvrir le fichier, l'envoyer
             Sinon erreur 
         
+Q7 / Traitement côté client
+    - Construit la request_t avec req.type = GET et le nom du fichier
+    - L'envoie au serveur avec Rio_writen
+    - Reçoit la response_t du serveur
+    - Si rep.code == -1 → affiche un message d'erreur
+    - Si succès → reçoit le fichier avec Rio_readn, le sauvegarde dans CLIENT_DIR
+    - Affiche les stats : bytes reçus, temps, vitesse en Kbytes/s
