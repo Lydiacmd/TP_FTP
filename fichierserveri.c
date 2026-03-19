@@ -3,9 +3,11 @@
  */
 
 #include "csapp.h"
+#include "common.h"
 
 #define MAX_NAME_LEN 256
 #define NB_PROC 10
+#define PORT 2121
 
 void transfert(int connfd);
 /* 
@@ -16,26 +18,19 @@ void transfert(int connfd);
 
 int main(int argc, char **argv)
 {
-    int listenfd, connfd, port;
+    int listenfd, connfd;
     socklen_t clientlen;
     struct sockaddr_in clientaddr;
     char client_ip_string[INET_ADDRSTRLEN];
     char client_hostname[MAX_NAME_LEN];
     pid_t pid;
-    int pids[3];
+    int pids[NB_PROC];
     
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s <port>\n", argv[0]);
-        exit(0);
-    }
-    port = atoi(argv[1]);
-
     
-   
     clientlen = (socklen_t)sizeof(clientaddr);
 
     // Cree un socket -> Associe l'adr + port et se met an ecoute att une connexion
-    listenfd = Open_listenfd(port);
+    listenfd = Open_listenfd(PORT);
 
     for(int i = 0; i< NB_PROC ; i++){
         pids[i] = Fork();

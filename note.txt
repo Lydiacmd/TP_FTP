@@ -1,0 +1,9 @@
+Q1 / 
+ - Definir un type enum du type de requete envoye 
+ - on cree le fichier commun.h pour cella 
+ - Dans l'etapes 1 on ignore GET on mets juste PUT et LS 
+
+Q3 / 
+ - Le fichier a lire n'est pas transmit en arguments 
+ - le serveur de fichiers ca ecouter sur le port 2121   (envoyer via une sockets)
+ - Le clients prends le nom du serveur en arg -> utilisateur tape get nom_fichier
