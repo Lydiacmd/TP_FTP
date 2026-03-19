@@ -1,5 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
+#define SERVER_DIR "./server_files/"
+#define CLIENT_DIR "./client_files/"
 #define MAX_FILENAME 256
 
 

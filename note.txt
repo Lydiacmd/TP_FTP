@@ -4,6 +4,12 @@ Q1 /
  - Dans l'etapes 1 on ignore GET on mets juste PUT et LS 
 
 Q3 / 
- - Le fichier a lire n'est pas transmit en arguments 
- - le serveur de fichiers ca ecouter sur le port 2121   (envoyer via une sockets)
- - Le clients prends le nom du serveur en arg -> utilisateur tape get nom_fichier
+ - Prend le nom du serveur en argv[1]
+ - Open_clientfd(serveur, PORT) pour se connecter
+ - Prompt ftp> avec boucle fgets + sscanf pour parser get nom_fichier
+
+Q4 / 
+ - pids[] global
+ - handler_sigint : envoie SIGINT à tous les fils + waitpid
+ - Signal(SIGINT, handler_sigint) installé avant le fork
+ - Dans le fils : Signal(SIGINT, SIG_DFL) pour terminer proprement -> eviter les boucle
