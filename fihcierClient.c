@@ -32,8 +32,18 @@ int main(int argc, char **argv) {
      * getaddrinfo() → résout le nom du serveur en adresse IP
      * connect() → se connecte au serveur
      */
-    int clientfd = Open_clientfd(serveur,PORT);
-    printf("Connected to %s\n",serveur);
+    //1 . connexion au maitre 
+    int masterfd = Open_clientfd(serveur,PORT);
+
+    //2. Recevoir les infos de l'esclave 
+    slave_info_t slave;
+    Rio_readn(masterfd, &slave, sizeof(slave_info_t));
+    Close(masterfd);
+    printf("Redirige vers esclave %s:%d\n", slave.ip, slave.port);
+
+    //3. connexion a l'esclave 
+    int clientfd = Open_clientfd(slave.ip, slave.port);
+    printf("Connected to %s\n", serveur);
 
     // Debut du Prompt interactifs
     printf("FTP >> ");

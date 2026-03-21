@@ -100,11 +100,18 @@ int main(int argc, char **argv)
 
     Signal(SIGINT, handler_sigint);
 
+    if (argc < 2) {
+    fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+    exit(1);
+    }
+
+    int port = atoi(argv[1]);
+
 
     clientlen = (socklen_t)sizeof(clientaddr);
 
     // Cree un socket -> Associe l'adr + port et se met an ecoute att une connexion
-    listenfd = Open_listenfd(PORT);
+    listenfd = Open_listenfd(port);
 
     for(int i = 0; i< NB_PROC ; i++){
         pids[i] = Fork();

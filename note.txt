@@ -48,3 +48,11 @@ Q10 /  Reprise après crash client
     - Au redémarrage, il lit ce fichier et met req.offset à la valeur déjà reçue
     - Le serveur fait un lseek(fd, req.offset, SEEK_SET) pour sauter la partie déjà envoyée
     - À la fin du transfert, TRANSFER_TMP est supprimé
+
+
+Q11 / Achitecture globale 
+Client → se connecte au MAÎTRE (port 2121)
+         le maître lui dit "connecte-toi à l'esclave X (ip:port)"
+Client → se déconnecte du maître
+Client → se connecte directement à l'esclave X
+         et fait ses get/bye normalement
