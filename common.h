@@ -3,7 +3,8 @@
 #define SERVER_DIR "./server_files/"
 #define CLIENT_DIR "./client_files/"
 #define MAX_FILENAME 256
-
+#define BLOCK_SIZE 4096
+#define TRANSFER_TMP "./client_files/transfer.tmp" //pour sauv ou on est arrive en cas de crash
 
 typedef enum {
     GET = 0,
@@ -14,6 +15,7 @@ typedef enum {
 typedef struct {
     typereq_t type;
     char nom_Fichier[MAX_FILENAME];
+    long offset;  // 0 = depuis le début, sinon reprendre depuis la
 } request_t;
 
 typedef struct {

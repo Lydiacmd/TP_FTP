@@ -32,3 +32,19 @@ Q7 / Traitement côté client
     - Si rep.code == -1 → affiche un message d'erreur
     - Si succès → reçoit le fichier avec Rio_readn, le sauvegarde dans CLIENT_DIR
     - Affiche les stats : bytes reçus, temps, vitesse en Kbytes/s
+
+
+Q8 / transfert par Bloc 
+    - On definit un BLOCK_SIZE de 4096 dans commun.h
+    - envoie / reception par bloc entre les 2 cotes 
+    - le serveur envois d'abord rep.filesize dans responce_t pour que le client sache la taille exacte quil va recevoire
+
+Q9 /  Multi-requêtes par connexion : 
+    - Le serveur a une boucle while(1) dans transfert(), il reste connecté tant que le client n'envoie pas bye
+    - Le client boucle sur fgets et break sur bye
+
+Q10 /  Reprise après crash client 
+    - Le client écrit dans un fichier temporaire (TRANSFER_TMP) l'avancement octet par octet à chaque bloc reçu
+    - Au redémarrage, il lit ce fichier et met req.offset à la valeur déjà reçue
+    - Le serveur fait un lseek(fd, req.offset, SEEK_SET) pour sauter la partie déjà envoyée
+    - À la fin du transfert, TRANSFER_TMP est supprimé
