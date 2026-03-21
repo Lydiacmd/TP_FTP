@@ -1,3 +1,7 @@
 *.o
 clientFTP
 serverFTP
+fichierserveri
+serveurEsclave
+serveurMaitre
+fihcierClient
