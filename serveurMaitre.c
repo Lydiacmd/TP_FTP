@@ -17,21 +17,19 @@ int main(int argc, char **argv) {
     // Q12 -> connexion aux esclave et stoker leur infos 
     slave_info_t slaves[NB_SLAVES];
     for (int i = 0; i < NB_SLAVES; i++) {
-        int port = SLAVE_BASE_PORT + i;   // debut 2122
-        int fd = Open_clientfd(ip, port); // verifier qu'il est up
+        int port = SLAVE_BASE_PORT + i;
+        int fd = Open_clientfd(ip, port);
         Close(fd);
         strncpy(slaves[i].ip, ip, INET_ADDRSTRLEN);
         slaves[i].port = port;
         printf("Esclave %d connecté sur %s:%d\n", i, ip, port);
     }
 
-
     // Q13 -> ecoute des clients et redirections
     int listenfd = Open_listenfd(MASTER_PORT);
     printf("Maître en écoute sur le port %d\n", MASTER_PORT);
 
-
-    int tour = 0; // round-robin
+    int tour = 0;
     while (1) {
         socklen_t clientlen;
         struct sockaddr_in clientaddr;
@@ -39,12 +37,28 @@ int main(int argc, char **argv) {
 
         int connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
 
-        // envoyer les infos de l'esclave choisi
-        Rio_writen(connfd, &slaves[tour], sizeof(slave_info_t));
-        printf("Client redirigé vers esclave %d (port %d)\n", tour, slaves[tour].port);
+        // Q14 bonus : trouver un esclave up en round-robin
+        int trouve = 0;
+        for (int i = 0; i < NB_SLAVES; i++) {
+            int idx = (tour + i) % NB_SLAVES;
+            int testfd = open_clientfd(slaves[idx].ip, slaves[idx].port); // minuscule = pas de exit
+            if (testfd >= 0) {
+                Close(testfd);
+                Rio_writen(connfd, &slaves[idx], sizeof(slave_info_t));
+                printf("Client redirigé vers esclave %d (port %d)\n", idx, slaves[idx].port);
+                tour = (idx + 1) % NB_SLAVES;
+                trouve = 1;
+                break;
+            }
+            printf("Esclave %d down, on essaie le suivant\n", idx);
+        }
 
-        tour = (tour + 1) % NB_SLAVES; // round-robin : boucle indefiniment entre 0 et NB_SLAVE-1 a 3 escalve 0->1->2->0...ect
+        if (!trouve) {
+            printf("Aucun esclave disponible !\n");
+            slave_info_t vide = {"", -1};
+            Rio_writen(connfd, &vide, sizeof(slave_info_t));
+        }
+
         Close(connfd);
     }
-
 }

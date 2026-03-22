@@ -56,3 +56,32 @@ Client → se connecte au MAÎTRE (port 2121)
 Client → se déconnecte du maître
 Client → se connecte directement à l'esclave X
          et fait ses get/bye normalement
+
+
+Q12 /  Interconnexion maître-esclaves
+Au démarrage, le maître se connecte à chaque esclave pour vérifier qu'ils sont up et stocke leurs infos (ip + port) dans un tableau slaves[NB_SLAVES].
+
+Q13 / Adaptation de la connexion client
+Le protocole de connexion a été modifié en 3 étapes : 
+le client se connecte d'abord au maître (port 2121), reçoit les infos d'un esclave (slave_info_t), 
+ferme la connexion avec le maître, puis se connecte directement à l'esclave.
+ Ensuite il suit le protocole normal (get/bye).
+
+
+Q14 / Protocole de reconnexion en cas de panne 
+- Quand l'esclave plante, Rio_readn va retourner une erreur côté client. À ce moment-là le client doit :
+        Se reconnecter au maître
+        Recevoir les infos d'un nouvel esclave
+        Se reconnecter à ce nouvel esclave
+        Reprendre le transfert depuis l'offset sauvegardé
+
+Cote Client : 
+    - la valeur retournée  par rio_readn est ≤ 0   --->  le client détecte que l'esclave est tombé --> Il ferme la connexion
+    - se reconnecte au maître pour obtenir les infos d'un esclave fonctionnel -->  se reconnecte à ce nouvel esclave
+    - renvoie la requête GET avec l'offset correspondant aux octets déjà reçus
+    -  Le transfert reprend donc depuis l'endroit où il s'est interrompu.
+
+Cote maitre : 
+    - avant de rediriger un client vers un esclave ->  il teste si l'esclave est up en tentant une connexion avec open_clientfd (minuscule : car la gestion d'erreur nous aide)
+    -  Si l'esclave est down, il passe au suivant dans l'ordre round-robin.
+    - // cas tout les esclave sont down au meme temps // Si aucun esclave n'est disponible, il envoie une slave_info_t avec port = -1 pour signaler l'erreur au client // Quitte propremeent au lieu de planter //.

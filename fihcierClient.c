@@ -112,7 +112,30 @@ int main(int argc, char **argv) {
                 clock_t debut = clock();
                 while (restant > 0) {
                     long a_ecrir = (restant < BLOCK_SIZE) ? restant : BLOCK_SIZE;
-                    Rio_readn(clientfd, buf, a_ecrir);
+                    int n = rio_readn(clientfd, buf, a_ecrir);
+
+                    if (n <= 0){
+                        // esclave planté -> reconnecter au maitre 
+                        printf("Esclave perdu, reconnexion...\n");
+                        Close(clientfd);
+
+                        int masterfd = Open_clientfd(serveur, PORT);
+                        Rio_readn(masterfd, &slave, sizeof(slave_info_t));
+                        Close(masterfd);
+
+                        clientfd = Open_clientfd(slave.ip, slave.port);
+                        printf("Reconnecté à %s:%d\n", slave.ip, slave.port);
+
+                        // renvoie la requete avec l'offset actuel 
+                        req.offset = rep.filesize - restant;
+                        Rio_writen(clientfd, &req, sizeof(request_t));
+                        Rio_readn(clientfd, &rep, sizeof(response_t));
+                        restant = rep.filesize;
+                        continue;
+
+                    }
+
+
                     write(fd, buf, a_ecrir);
                     restant -= a_ecrir;
 
