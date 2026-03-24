@@ -6,7 +6,8 @@
 #define PORT 2121
 
 int main(int argc, char **argv) {
-
+    char login[64];
+    char password[64];
     FILE *tmp = fopen(TRANSFER_TMP, "r");
     if (tmp != NULL) {
         // le fichier existe donc transfert interrompu
@@ -32,16 +33,16 @@ int main(int argc, char **argv) {
      * getaddrinfo() → résout le nom du serveur en adresse IP
      * connect() → se connecte au serveur
      */
-    //1 . connexion au maitre 
+    //1 . connexion au maitre
     int masterfd = Open_clientfd(serveur,PORT);
 
-    //2. Recevoir les infos de l'esclave 
+    //2. Recevoir les infos de l'esclave
     slave_info_t slave;
     Rio_readn(masterfd, &slave, sizeof(slave_info_t));
     Close(masterfd);
     printf("Redirige vers esclave %s:%d\n", slave.ip, slave.port);
 
-    //3. connexion a l'esclave 
+    //3. connexion a l'esclave
     int clientfd = Open_clientfd(slave.ip, slave.port);
     printf("Connected to %s\n", serveur);
 
@@ -115,7 +116,7 @@ int main(int argc, char **argv) {
                     int n = rio_readn(clientfd, buf, a_ecrir);
 
                     if (n <= 0){
-                        // esclave planté -> reconnecter au maitre 
+                        // esclave planté -> reconnecter au maitre
                         printf("Esclave perdu, reconnexion...\n");
                         Close(clientfd);
 
@@ -126,7 +127,7 @@ int main(int argc, char **argv) {
                         clientfd = Open_clientfd(slave.ip, slave.port);
                         printf("Reconnecté à %s:%d\n", slave.ip, slave.port);
 
-                        // renvoie la requete avec l'offset actuel 
+                        // renvoie la requete avec l'offset actuel
                         req.offset = rep.filesize - restant;
                         Rio_writen(clientfd, &req, sizeof(request_t));
                         Rio_readn(clientfd, &rep, sizeof(response_t));
@@ -153,11 +154,103 @@ int main(int argc, char **argv) {
                     rep.filesize, temps, (rep.filesize / 1024.0) / temps);
             }
         }
+        else if (sscanf(cmd, "login %s %s", login, password) == 2) {
+            request_t req;
+            req.type = LOGIN;
+            req.offset = 0;
+            strncpy(req.login, login, 64);
+            strncpy(req.password, password, 64);
+            Rio_writen(clientfd, &req, sizeof(request_t));
+
+            response_t rep;
+            Rio_readn(clientfd, &rep, sizeof(response_t));
+
+            if (rep.code == 0)
+                printf("Authentification réussie\n");
+            else
+                fprintf(stderr, "Erreur : login ou mot de passe incorrect\n");
+        }
 
         else if (strncmp(cmd, "bye", 3) == 0) {
-    printf("ciao azul !\n");// a changer
-    break;
-}
+            printf("ciao azul !\n");// a changer
+            break;
+        }
+
+        else if (strncmp(cmd, "ls", 2) == 0) {
+            request_t req;
+            req.type = LS;
+            req.offset = 0; // pas utilisé pour Ls
+            Rio_writen(clientfd, &req, sizeof(request_t));
+
+            response_t rep;
+            Rio_readn(clientfd, &rep, sizeof(response_t));
+
+            if (rep.code == -1) {
+                fprintf(stderr, "Erreur : impossible d'obtenir la liste des fichiers\n");
+                continue;
+            }
+
+            char result[rep.filesize + 1];
+            Rio_readn(clientfd, result, rep.filesize);
+            result[rep.filesize] = '\0'; // Null-terminate the string
+            printf("%s", result);
+        }
+
+        else if (sscanf(cmd, "rm %s", nom_fichier) == 1) {
+            request_t req;
+            req.type = RM;
+            req.offset = 0;
+            strncpy(req.nom_Fichier, nom_fichier, MAX_FILENAME);
+            Rio_writen(clientfd, &req, sizeof(request_t));
+
+            response_t rep;
+            Rio_readn(clientfd, &rep, sizeof(response_t));
+
+            if (rep.code == 0)
+                printf("Fichier supprimé avec succès\n");
+            else
+                fprintf(stderr, "Erreur : fichier introuvable\n");
+        } else if (sscanf(cmd, "put %s", nom_fichier) == 1) {
+            // 1. ouvrir le fichier local
+            char chemin[MAX_NAME_LEN];
+            snprintf(chemin, MAX_NAME_LEN, "%s%s", CLIENT_DIR, nom_fichier);
+
+            int fd = open(chemin, O_RDONLY);
+            if (fd < 0) {
+                fprintf(stderr, "Erreur : fichier local introuvable\n");
+                continue; // ← attention ici on est dans le while(fgets), pas le bon mot clé, lequel utiliser ?
+            }
+
+            // 2. obtenir la taille
+            struct stat st;
+            stat(chemin, &st);
+
+            // 3. construire et envoyer la requête
+            request_t req;
+            req.type = PUT;
+            req.offset = 0;
+            req.filesize = st.st_size;
+            strncpy(req.nom_Fichier, nom_fichier, MAX_FILENAME);
+            Rio_writen(clientfd, &req, sizeof(request_t));
+
+            char buf[BLOCK_SIZE];
+            long restant = st.st_size;
+
+            while (restant > 0) {
+                long a_lire = (restant < BLOCK_SIZE) ? restant : BLOCK_SIZE;
+                read(fd, buf, a_lire);
+                Rio_writen(clientfd, buf, a_lire);
+                restant -= a_lire;
+            }
+            close(fd);
+            response_t rep;
+            Rio_readn(clientfd, &rep, sizeof(response_t));
+
+            if (rep.code == 0)
+                printf("Fichier envoyé avec succès\n");
+            else
+                fprintf(stderr, "Erreur lors de l'envoi\n");
+        }
         else {
             fprintf(stderr,"cmd inconnue");
         }

@@ -12,6 +12,9 @@
 void transfert(int connfd){
     request_t req;
     response_t rep;
+    int authentifie = 0;
+
+
     while (1) {
     // Recevoir la requete
     int n = Rio_readn(connfd, &req, sizeof(request_t));
@@ -62,7 +65,84 @@ void transfert(int connfd){
             restant -= a_lire;
         }
         close(fd);
-    }else {
+    }else if (req.type == LS){
+        FILE *fp = popen("ls " SERVER_DIR, "r");
+        if (fp == NULL) {
+            rep.code = -1;
+            Rio_writen(connfd, &rep, sizeof(response_t));
+            continue;
+        }
+        char result[4096*10];//blocksize * 10 pour stocker le resultat de ls
+        size_t total_size = 0;
+        int n;
+
+        while((n=fread(result+total_size, 1, sizeof(result)-total_size, fp)) > 0) {
+            total_size += n;
+        }
+        pclose(fp);
+        rep.code = 0;
+        rep.filesize = total_size;
+        Rio_writen(connfd, &rep, sizeof(response_t));
+        Rio_writen(connfd, result, total_size);
+    } else if (req.type == RM) {
+        if (!authentifie) {
+        rep.code = -2;  // code spécial = non autorisé
+        Rio_writen(connfd, &rep, sizeof(response_t));
+        continue;
+    }
+    char chemin[MAX_NAME_LEN];
+    snprintf(chemin, MAX_NAME_LEN, "%s%s", SERVER_DIR, req.nom_Fichier);
+
+    if (remove(chemin) == 0) {
+        rep.code = 0;
+    } else {
+        rep.code = -1;
+    }
+    Rio_writen(connfd, &rep, sizeof(response_t));
+}   else if (req.type == PUT) {
+        if (!authentifie) {
+        rep.code = -2;  // code spécial = non autorisé
+        Rio_writen(connfd, &rep, sizeof(response_t));
+        continue;
+    }
+        // ouvrir le fichier
+        char chemin[MAX_NAME_LEN];
+        snprintf(chemin, MAX_NAME_LEN, "%s%s", SERVER_DIR, req.nom_Fichier);
+
+        int fd = open(chemin, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd < 0) {
+            rep.code = -1;
+            Rio_writen(connfd, &rep, sizeof(response_t));
+            continue;
+        }
+
+        // recevoir le fichier par bloc
+        char buf[BLOCK_SIZE];
+        long restant = req.filesize;
+
+        while (restant > 0) {
+            long a_lire = (restant < BLOCK_SIZE) ? restant : BLOCK_SIZE;
+            Rio_readn(connfd, buf, a_lire);
+            write(fd, buf, a_lire);
+            restant -= a_lire;
+        }
+        close(fd);
+
+        // 3. envoyer confirmation
+        rep.code = 0;
+        Rio_writen(connfd, &rep, sizeof(response_t));
+    }    else if (req.type == LOGIN) {
+            if (strcmp(req.login, AUTH_USER) == 0 &&
+                strcmp(req.password, AUTH_PASS) == 0) {
+                authentifie = 1;
+                rep.code = 0;
+                printf("Client authentifié\n");
+            } else {
+                rep.code = -1;
+            }
+            Rio_writen(connfd, &rep, sizeof(response_t));
+        }
+else {
         // type invalide
         rep.code = -1;
         Rio_writen(connfd, &rep, sizeof(response_t));

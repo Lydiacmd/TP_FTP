@@ -6,18 +6,25 @@
 #define BLOCK_SIZE 4096
 #define TRANSFER_TMP "./client_files/transfer.tmp" //pour sauv ou on est arrive en cas de crash
 #define NB_SLAVES 2
-#define SLAVE_BASE_PORT 2122   // escalve 0 = 2122, esclave 1 = 2123 ... ect 
+#define SLAVE_BASE_PORT 2122   // escalve 0 = 2122, esclave 1 = 2123 ... ect
+#define AUTH_USER "admin"
+#define AUTH_PASS "1809"
 
 typedef enum {
     GET = 0,
     PUT = 1,
-    LS = 2
+    LS = 2,
+    RM = 3,
+    LOGIN = 4
 } typereq_t;
 
 typedef struct {
     typereq_t type;
     char nom_Fichier[MAX_FILENAME];
     long offset;  // 0 = depuis le début, sinon reprendre depuis la
+    long filesize; // utilisé pour PUT, sinon 0
+    char login[64];
+    char password[64];
 } request_t;
 
 typedef struct {
@@ -29,5 +36,6 @@ typedef struct {
     char ip[INET_ADDRSTRLEN]; // cte : taille max d'une adresse IPv4
     int port;
 } slave_info_t;
+
 
 #endif
