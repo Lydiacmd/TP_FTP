@@ -4,6 +4,11 @@
 #define MAX_NAME_LEN 256
 #define MASTER_PORT 2121
 
+// AJOUT : handler SIGINT pour arrêt propre
+void handle_sigint(int sig) {
+    printf("\nArrêt propre du maître.\n");
+    exit(0);
+}
 
 int main(int argc, char **argv) {
 
@@ -28,6 +33,9 @@ int main(int argc, char **argv) {
     // Q13 -> ecoute des clients et redirections
     int listenfd = Open_listenfd(MASTER_PORT);
     printf("Maître en écoute sur le port %d\n", MASTER_PORT);
+
+    // AJOUT : enregistrement du handler SIGINT
+    signal(SIGINT, handle_sigint);
 
     int tour = 0;
     while (1) {

@@ -37,11 +37,16 @@ int main(int argc, char **argv) {
     int masterfd = Open_clientfd(serveur,PORT);
 
     //2. Recevoir les infos de l'esclave
-    slave_info_t slave;
+     slave_info_t slave;
     Rio_readn(masterfd, &slave, sizeof(slave_info_t));
     Close(masterfd);
     printf("Redirige vers esclave %s:%d\n", slave.ip, slave.port);
 
+    // AJOUT : port = -1 -> aucun esclave disponible
+    if (slave.port == -1) {
+        fprintf(stderr, "Erreur : aucun esclave disponible\n");
+        exit(1);
+    }
     //3. connexion a l'esclave
     int clientfd = Open_clientfd(slave.ip, slave.port);
     printf("Connected to %s\n", serveur);

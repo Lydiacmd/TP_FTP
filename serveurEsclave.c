@@ -1,9 +1,6 @@
-/*
- * echoserveri.c - An iterative echo server
- */
-
 #include "csapp.h"
 #include "common.h"
+#include <sys/prctl.h>  // AJOUT : pour prctl
 
 #define MAX_NAME_LEN 256
 #define NB_PROC 10
@@ -48,12 +45,6 @@ void transfert(int connfd){
         // envois exactement N bytes sur la socket (garentit tout les byte bien envoyer )
         Rio_writen(connfd, &rep, sizeof(response_t));
 
-        // charger tout le fichier en mémoire et envoyer
-       /* char *buf = malloc(filesize);
-        read(fd, buf, filesize);
-        Rio_writen(connfd, buf, filesize);
-
-        free(buf);*/
         char buf[BLOCK_SIZE];
         long restant = filesize;
 
@@ -149,25 +140,17 @@ else {
     }
 }
 }
-/*
- * Note that this code only works with IPv4 addresses
- * (IPv6 is not supported)
- */
 
 int pids[NB_PROC] = {0};
 
-
 void handler_sigint(int sig){
-
     for (int i = 0; i < NB_PROC; i++) {
         if (pids[i] > 0)
-            Kill(pids[i], SIGINT);
+            kill(pids[i], SIGKILL);  // tue chaque fils directement par PID
     }
-    while(waitpid(-1, NULL, 0) > 0);
-    exit(0);
-
-
+    _exit(0);  // _exit et pas exit, plus safe depuis un handler
 }
+
 
 int main(int argc, char **argv)
 {
@@ -178,7 +161,9 @@ int main(int argc, char **argv)
     char client_hostname[MAX_NAME_LEN];
     pid_t pid;
 
+
     Signal(SIGINT, handler_sigint);
+    Signal(SIGTERM, handler_sigint);
 
     if (argc < 2) {
     fprintf(stderr, "Usage: %s <port>\n", argv[0]);
@@ -204,8 +189,10 @@ int main(int argc, char **argv)
 
     if (pid == 0){  // le fils
 
+        prctl(PR_SET_PDEATHSIG, SIGKILL);  // AJOUT : meurt instantanément si le parent meurt
         // quand il recois un SIGINT il termine simplement evite les boucle infinie
         Signal(SIGINT, SIG_DFL);
+        Signal(SIGTERM, SIG_DFL);  // AJOUT : ne pas propager le handler aux fils
 
         // La boule êrmet de servir les clients un par un, indefinimen
         // ici pas de close(listenfd) il doit etre enlevé dans le fils car des le pool les fils ont besoin de
